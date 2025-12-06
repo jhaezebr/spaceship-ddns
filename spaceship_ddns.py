@@ -108,14 +108,14 @@ def run_update(
     names: list[str],
 ):
     try:
-        current_address = (
+        current_ip = (
             requests
             .get("https://api.ipify.org")
             .content
             .decode("utf8")
         )
     except requests.RequestException as e:
-        raise Exception("Unable to retrieve the current address") from e
+        raise Exception("Unable to retrieve the current ip") from e
 
     dns_entries = get_dns_entries(domain, api_key, api_secret)
 
@@ -127,7 +127,7 @@ def run_update(
                 api_key=api_key,
                 api_secret=api_secret,
                 name=name,
-                address=current_address,
+                ip=current_ip,
             )
             continue
 
@@ -137,18 +137,18 @@ def run_update(
             logger.warning(f"{name} is not an A-record, ignoring")
             continue
 
-        if entry["address"] == current_address:
-            logger.info(f"{name}'s address is correctly configured")
+        if entry["address"] == current_ip:
+            logger.info(f"{name}'s ip is correctly configured")
             continue
 
-        logger.info(f"Updating {name} entry to {current_address}")
+        logger.info(f"Updating {name} entry to {current_ip}")
         update_dns_entry(
             domain=domain,
             api_key=api_key,
             api_secret=api_secret,
             name=entry["name"],
-            old_address=entry["address"],
-            new_address=current_address,
+            old_ip=entry["address"],
+            new_ip=current_ip,
         )
 
 def main():

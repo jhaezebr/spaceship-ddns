@@ -28,7 +28,7 @@ def delete_dns_entry(
     api_key: str,
     api_secret: str,
     name: str,
-    address: str,
+    ip: str,
 ):
     url = f"{ENDPOINT}/{domain}"
 
@@ -36,7 +36,7 @@ def delete_dns_entry(
         {
             "type": "A",
             "name": name,
-            "address": address,
+            "address": ip,
         }
     ]
     headers = {
@@ -57,7 +57,7 @@ def add_dns_entry(
     api_key: str,
     api_secret: str,
     name: str,
-    address: str,
+    ip: str,
 ):
     url = f"{ENDPOINT}/{domain}"
 
@@ -67,7 +67,7 @@ def add_dns_entry(
             {
                 "type": "A",
                 "name": name,
-                "address": address,
+                "address": ip,
                 "ttl": 1800,
             },
         ],
