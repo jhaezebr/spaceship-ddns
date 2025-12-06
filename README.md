@@ -39,8 +39,6 @@ You can also set up the following environment variables:
 - `SPACESHIP_DDNS_API_SECRET` (your API secret)
 - `SPACESHIP_DDNS_NAMES` (comma-separated list of DNS names to update, e.g. `@,www,api`)
 
-If you omit the `-N/--name` argument, the script will use the `SPACESHIP_DDNS_NAMES` environment variable.
-
 #### Loop mode
 
 To run the script indefinitely, use the `--loop` argument. You can optionally specify a delay in seconds:
