@@ -1,7 +1,8 @@
 FROM python:3.13-slim AS production
 
 WORKDIR /app
-COPY spaceship_ddns.py spaceship/ requirements.txt /app/
+COPY spaceship_ddns.py requirements.txt /app/
+COPY spaceship /app/spaceship/
 
 RUN pip install --progress-bar off --no-cache-dir -r requirements.txt
 ENTRYPOINT ["python3", "spaceship_ddns.py"]
