@@ -6,9 +6,12 @@ spaceship's website.
 
 import argparse
 import datetime
+import logging
 import os
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 ENDPOINT = "https://spaceship.dev/api/v1/dns/records"
 
@@ -52,6 +55,13 @@ def parse_args():
         help="Target DNS name. Use @ for domain root. Can be specified multiple times",
         required=True,
     )
+    parsers.add_argument(
+        "-l", "--log-level",
+        type=str,
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+        default="INFO",
+        required=False,
+    )
     args = parsers.parse_args()
 
     domain: str | None = args.domain
@@ -67,8 +77,9 @@ def parse_args():
         api_secret = get_env_var("SPACESHIP_DDNS_API_SECRET")
 
     names: list[str] = args.name
+    log_level: str = args.log_level
 
-    return domain, api_key, api_secret, names
+    return domain, api_key, api_secret, names, log_level
 
 
 def get_dns_entries(domain: str, api_key: str, api_secret: str):
@@ -82,7 +93,7 @@ def get_dns_entries(domain: str, api_key: str, api_secret: str):
 
     response_text = response.content.decode("utf8")
     date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-    print(f"(UTC) {date} HTTP {response.status_code} {response_text}")
+    logger.info(f"(UTC) {date} HTTP {response.status_code} {response_text}")
 
     return { item['name']: item for item in response.json()["items"]}
 
@@ -112,8 +123,8 @@ def delete_dns_entry(
 
     response_text = response.content.decode("utf8")
     date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-    print(f"(UTC) {date} HTTP {response.status_code} {response_text}")
-    print(payload)
+    logger.info(f"(UTC) {date} HTTP {response.status_code} {response_text}")
+    logger.debug(f"Payload: {payload}")
 
 
 def add_dns_entry(
@@ -145,8 +156,8 @@ def add_dns_entry(
 
     response_text = response.content.decode("utf8")
     date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-    print(f"(UTC) {date} HTTP {response.status_code} {response_text}")
-    print(payload)
+    logger.info(f"(UTC) {date} HTTP {response.status_code} {response_text}")
+    logger.debug(f"Payload: {payload}")
 
 def update_dns_entry(
     domain: str,
@@ -173,7 +184,10 @@ def update_dns_entry(
     )
 
 def main():
-    domain, api_key, api_secret, names = parse_args()
+    domain, api_key, api_secret, names, log_level = parse_args()
+
+    # Configure logging
+    logging.basicConfig(level=log_level.upper())
 
     try:
         current_address = (
@@ -189,7 +203,7 @@ def main():
 
     for name in names:
         if name not in dns_entries.keys():
-            print(f"Creating entry {name}")
+            logger.info(f"Creating entry {name}")
             add_dns_entry(
                 domain=domain,
                 api_key=api_key,
@@ -202,14 +216,14 @@ def main():
         entry = dns_entries[name]
 
         if entry["type"] != "A":
-            print(f"{name} is not an A-record, ignoring")
+            logger.warning(f"{name} is not an A-record, ignoring")
             continue
 
         if entry["address"] == current_address:
-            print(f"{name}'s address is correctly configured")
+            logger.info(f"{name}'s address is correctly configured")
             continue
 
-        print(f"Updating {name} entry to {current_address}")
+        logger.info(f"Updating {name} entry to {current_address}")
         update_dns_entry(
             domain=domain,
             api_key=api_key,
