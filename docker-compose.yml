@@ -3,6 +3,8 @@ version: "3.6"
 services:
   spaceship_ddns:
     container_name: spaceship_ddns
-    build: .
+    build:
+      context: .
+      target: production
     env_file: .env
     command: python3 spaceship_ddns.py --loop
