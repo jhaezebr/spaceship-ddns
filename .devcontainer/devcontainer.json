@@ -1,7 +1,8 @@
 {
     "name": "Python 3",
     "build": {
-        "dockerfile": "../Dockerfile"
+        "dockerfile": "../Dockerfile",
+        "target": "devcontainer"
     },
     "customizations": {
         "vscode": {
