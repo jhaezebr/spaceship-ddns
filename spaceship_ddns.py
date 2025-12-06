@@ -11,7 +11,7 @@ import os
 import time
 import requests
 
-from spaceship import update_dns_entry,get_dns_entries,add_dns_entry
+from spaceship import SpaceshipAPI
 
 logger = logging.getLogger(__name__)
 
@@ -97,14 +97,17 @@ def parse_args():
     log_level: str = args.log_level
     loop_delay: int | None = args.loop
 
-    return domain, api_key, api_secret, names, log_level, loop_delay
+    api = SpaceshipAPI(domain,api_key,api_secret)
+
+    # Configure logging
+    logging.basicConfig(level=log_level.upper())
+
+    return api, names, loop_delay
 
 
 
 def run_update(
-    domain: str,
-    api_key: str,
-    api_secret: str,
+    api: SpaceshipAPI,
     names: list[str],
 ):
     try:
@@ -117,15 +120,12 @@ def run_update(
     except requests.RequestException as e:
         raise Exception("Unable to retrieve the current ip") from e
 
-    dns_entries = get_dns_entries(domain, api_key, api_secret)
+    dns_entries = api.get_dns_entries()
 
     for name in names:
         if name not in dns_entries.keys():
             logger.info(f"Creating entry {name}")
-            add_dns_entry(
-                domain=domain,
-                api_key=api_key,
-                api_secret=api_secret,
+            api.add_dns_entry(
                 name=name,
                 ip=current_ip,
             )
@@ -142,29 +142,23 @@ def run_update(
             continue
 
         logger.info(f"Updating {name} entry to {current_ip}")
-        update_dns_entry(
-            domain=domain,
-            api_key=api_key,
-            api_secret=api_secret,
+        api.update_dns_entry(
             name=entry["name"],
             old_ip=entry["address"],
             new_ip=current_ip,
         )
 
 def main():
-    domain, api_key, api_secret, names, log_level, loop_delay = parse_args()
-
-    # Configure logging
-    logging.basicConfig(level=log_level.upper())
+    api, names, loop_delay = parse_args()
 
     if loop_delay is not None:
         logger.info(f"Starting loop mode with {loop_delay} second delay")
         while True:
-            run_update(domain, api_key, api_secret, names)
+            run_update(api, names)
             logger.debug(f"Sleeping for {loop_delay} seconds")
             time.sleep(loop_delay)
     else:
-        run_update(domain, api_key, api_secret, names)
+        run_update(api, names)
 
 
 if __name__ == "__main__":
