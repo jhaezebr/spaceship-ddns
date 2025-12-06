@@ -1,3 +1,5 @@
+from typing import Dict, Any, Optional
+
 import datetime
 import logging
 
@@ -7,6 +9,38 @@ import requests
 logger = logging.getLogger(__name__)
 
 ENDPOINT = "https://spaceship.dev/api/v1/dns/records"
+
+
+class SpaceShipDNSEntry:
+    def __init__(
+        self,
+        name: str,
+        record_type: str,
+        ip: str,
+        ttl: int,
+        **kwargs
+    ):
+        self.name = name
+        self.record_type = record_type
+        self.ip = ip
+        self.address = ip
+        self.ttl = ttl
+        # Store any other fields
+        self.extra = kwargs
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]):
+        return cls(
+            name=data['name'],
+            record_type=data['type'],
+            ip=data['address'],
+            ttl=data['ttl'],
+            **{k: v for k, v in data.items() if k not in {'name', 'type', 'address', 'ttl'}}
+        )
+
+    def __repr__(self):
+        return f"<SpaceShipDNSEntry name={self.name} record_type={self.record_type} address={self.ip} ttl={self.ttl}>"
+
 
 class SpaceshipAPI:
     def __init__(self, domain: str, api_key: str, api_secret: str):
@@ -24,7 +58,8 @@ class SpaceshipAPI:
         response_text = response.content.decode("utf8")
         date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
         logger.info(f"(UTC) {date} HTTP {response.status_code} {response_text}")
-        return { item['name']: item for item in response.json()["items"]}
+        items = response.json()["items"]
+        return { item['name']: SpaceShipDNSEntry.from_dict(item) for item in items }
 
     def delete_dns_entry(self, name: str, ip: str):
         url = f"{ENDPOINT}/{self.domain}"

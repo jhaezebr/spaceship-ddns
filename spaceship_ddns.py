@@ -133,18 +133,18 @@ def run_update(
 
         entry = dns_entries[name]
 
-        if entry["type"] != "A":
+        if entry.record_type != "A":
             logger.warning(f"{name} is not an A-record, ignoring")
             continue
 
-        if entry["address"] == current_ip:
+        if entry.ip == current_ip:
             logger.info(f"{name}'s ip is correctly configured")
             continue
 
         logger.info(f"Updating {name} entry to {current_ip}")
         api.update_dns_entry(
-            name=entry["name"],
-            old_ip=entry["address"],
+            name=name,
+            old_ip=entry.ip,
             new_ip=current_ip,
         )
 
