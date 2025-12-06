@@ -4,7 +4,7 @@ WORKDIR /app
 ADD spaceship_ddns.py requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
-CMD ["python3", "spaceship_ddns.py"]
+ENTRYPOINT ["python3", "spaceship_ddns.py"]
 
 
 # DEVCONTAINER
