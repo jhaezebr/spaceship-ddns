@@ -48,8 +48,9 @@ def parse_args():
     parsers.add_argument(
         "-N", "--name",
         type=str,
-        help="Target DNS name. Use @ for domain root.",
-        required=False,
+        action='append',
+        help="Target DNS name. Use @ for domain root. Can be specified multiple times",
+        required=True,
     )
     args = parsers.parse_args()
 
@@ -65,11 +66,9 @@ def parse_args():
     if api_secret is None:
         api_secret = get_env_var("SPACESHIP_DDNS_API_SECRET")
 
-    name: str | None = args.name
-    if name is None:
-        name = get_env_var("SPACESHIP_DDNS_NAME")
+    names: list[str] = args.name
 
-    return domain, api_key, api_secret, name
+    return domain, api_key, api_secret, names
 
 
 def get_dns_entries(domain: str, api_key: str, api_secret: str):
@@ -85,7 +84,7 @@ def get_dns_entries(domain: str, api_key: str, api_secret: str):
     date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
     print(f"(UTC) {date} HTTP {response.status_code} {response_text}")
 
-    return response.json()["items"]
+    return { item['name']: item for item in response.json()["items"]}
 
 
 def delete_dns_entry(
@@ -149,9 +148,32 @@ def add_dns_entry(
     print(f"(UTC) {date} HTTP {response.status_code} {response_text}")
     print(payload)
 
+def update_dns_entry(
+    domain: str,
+    api_key: str,
+    api_secret: str,
+    name: str,
+    old_address: str,
+    new_address: str,
+):
+    delete_dns_entry(
+        domain=domain,
+        api_key=api_key,
+        api_secret=api_secret,
+        name=name,
+        address=old_address
+    )
+
+    add_dns_entry(
+        domain=domain,
+        api_key=api_key,
+        api_secret=api_secret,
+        name=name,
+        address=new_address
+    )
 
 def main():
-    domain, api_key, api_secret, name = parse_args()
+    domain, api_key, api_secret, names = parse_args()
 
     try:
         current_address = (
@@ -164,22 +186,38 @@ def main():
         raise Exception("Unable to retrieve the current address") from e
 
     dns_entries = get_dns_entries(domain, api_key, api_secret)
-    current_address_found = False
-    for entry in dns_entries:
-        if entry["name"] == name and entry["type"] == "A":
-            if entry["address"] == current_address:
-                current_address_found = True
-            else:
-                delete_dns_entry(
-                    domain=domain,
-                    api_key=api_key,
-                    api_secret=api_secret,
-                    name=name,
-                    address=entry["address"],
-                )
 
-    if not current_address_found:
-        add_dns_entry(domain, api_key, api_secret, name, current_address)
+    for name in names:
+        if name not in dns_entries.keys():
+            print(f"Creating entry {name}")
+            add_dns_entry(
+                domain=domain,
+                api_key=api_key,
+                api_secret=api_secret,
+                name=name,
+                address=current_address,
+            )
+            continue
+
+        entry = dns_entries[name]
+
+        if entry["type"] != "A":
+            print(f"{name} is not an A-record, ignoring")
+            continue
+
+        if entry["address"] == current_address:
+            print(f"{name}'s address is correctly configured")
+            continue
+
+        print(f"Updating {name} entry to {current_address}")
+        update_dns_entry(
+            domain=domain,
+            api_key=api_key,
+            api_secret=api_secret,
+            name=entry["name"],
+            old_address=entry["address"],
+            new_address=current_address,
+        )
 
 
 if __name__ == "__main__":
