@@ -53,7 +53,7 @@ def parse_args():
         "-N", "--name",
         type=str,
         action='append',
-        help="Target DNS name. Use @ for domain root. Can be specified multiple times",
+        help="Target DNS name. Use @ for domain root. Can be specified multiple times. Can be specified by env variable SPACESHIP_DDNS_NAMES (comma seperated)",
         required=False,
     )
     parsers.add_argument(
