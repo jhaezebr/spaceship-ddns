@@ -3,7 +3,7 @@ FROM python:3.13-slim AS production
 WORKDIR /app
 ADD spaceship_ddns.py requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --progress-bar off --no-cache-dir -r requirements.txt
 ENTRYPOINT ["python3", "spaceship_ddns.py"]
 
 
