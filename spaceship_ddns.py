@@ -8,6 +8,7 @@ import argparse
 import datetime
 import logging
 import os
+import time
 
 import requests
 
@@ -62,6 +63,14 @@ def parse_args():
         default="INFO",
         required=False,
     )
+    parsers.add_argument(
+        "--loop",
+        type=int,
+        nargs="?",
+        const=300,
+        help="Run indefinitely in a loop with optional delay in seconds (default: 300)",
+        required=False,
+    )
     args = parsers.parse_args()
 
     domain: str | None = args.domain
@@ -78,8 +87,9 @@ def parse_args():
 
     names: list[str] = args.name
     log_level: str = args.log_level
+    loop_delay: int | None = args.loop
 
-    return domain, api_key, api_secret, names, log_level
+    return domain, api_key, api_secret, names, log_level, loop_delay
 
 
 def get_dns_entries(domain: str, api_key: str, api_secret: str):
@@ -183,12 +193,12 @@ def update_dns_entry(
         address=new_address
     )
 
-def main():
-    domain, api_key, api_secret, names, log_level = parse_args()
-
-    # Configure logging
-    logging.basicConfig(level=log_level.upper())
-
+def run_update(
+    domain: str,
+    api_key: str,
+    api_secret: str,
+    names: list[str],
+):
     try:
         current_address = (
             requests
@@ -232,6 +242,21 @@ def main():
             old_address=entry["address"],
             new_address=current_address,
         )
+
+def main():
+    domain, api_key, api_secret, names, log_level, loop_delay = parse_args()
+
+    # Configure logging
+    logging.basicConfig(level=log_level.upper())
+
+    if loop_delay is not None:
+        logger.info(f"Starting loop mode with {loop_delay} second delay")
+        while True:
+            run_update(domain, api_key, api_secret, names)
+            logger.debug(f"Sleeping for {loop_delay} seconds")
+            time.sleep(loop_delay)
+    else:
+        run_update(domain, api_key, api_secret, names)
 
 
 if __name__ == "__main__":
