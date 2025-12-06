@@ -5,4 +5,4 @@ services:
     container_name: spaceship_ddns
     build: .
     env_file: .env
-    command: --loop
+    command: python3 spaceship_ddns.py --loop
