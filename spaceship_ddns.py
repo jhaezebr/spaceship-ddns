@@ -54,7 +54,7 @@ def parse_args():
         type=str,
         action='append',
         help="Target DNS name. Use @ for domain root. Can be specified multiple times",
-        required=True,
+        required=False,
     )
     parsers.add_argument(
         "-l", "--log-level",
@@ -85,7 +85,16 @@ def parse_args():
     if api_secret is None:
         api_secret = get_env_var("SPACESHIP_DDNS_API_SECRET")
 
-    names: list[str] = args.name
+    names: list[str] | None = args.name
+    if names is None:
+        names_env = os.getenv("SPACESHIP_DDNS_NAMES")
+        if names_env is None:
+            raise ValueError(
+                "Please use the -N/--name CLI arguments or set the "
+                "SPACESHIP_DDNS_NAMES environment variable (comma-separated)"
+            )
+        names = [name.strip() for name in names_env.split(",")]
+
     log_level: str = args.log_level
     loop_delay: int | None = args.loop
 
