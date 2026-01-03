@@ -59,7 +59,7 @@ class SpaceshipAPI:
         date = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
         logger.info(f"(UTC) {date} HTTP {response.status_code} {response_text}")
         items = response.json()["items"]
-        return { item['name']: SpaceShipDNSEntry.from_dict(item) for item in items }
+        return { item['name']: SpaceShipDNSEntry.from_dict(item) for item in items if "address" in item }
 
     def delete_dns_entry(self, name: str, ip: str):
         url = f"{ENDPOINT}/{self.domain}"
@@ -90,7 +90,7 @@ class SpaceshipAPI:
                     "type": "A",
                     "name": name,
                     "address": ip,
-                    "ttl": 1800,
+                    "ttl": 300,
                 },
             ],
         }
